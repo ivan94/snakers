@@ -4,6 +4,7 @@ use std::{
 };
 
 mod canvas;
+mod game_state;
 mod paintress;
 
 use crossterm::{
@@ -11,32 +12,25 @@ use crossterm::{
     style::Stylize,
 };
 
-use crate::{canvas::Canvas, paintress::Paintress};
+use crate::{canvas::Canvas, game_state::GameState, paintress::Paintress};
 
-#[derive(PartialEq)]
-enum Direction {
-    UP,
-    DOWN,
-    LEFT,
-    RIGHT,
-}
+const SIZE_X: i16 = 40;
+const SIZE_Y: i16 = 30;
+const TICKS_PER_SECOND: u64 = 15;
 
 fn main() -> io::Result<()> {
     let mut paintress = Paintress::create()?;
 
+    let mut tps = TICKS_PER_SECOND;
+
     paintress.setup()?;
-    let mut canvas = Canvas::new(50, 50, ' '.stylize());
-    let mut snake_moved = Instant::now();
-    let mut snake_x = 1;
-    let mut snake_y = 25;
-    let mut snake_dx = 1;
-    let mut snake_dy = 1;
-    let mut snake_dir = Direction::RIGHT;
+    let mut canvas = Canvas::new(SIZE_X as u16, SIZE_Y as u16, ' '.stylize());
+    let mut state = GameState::new(SIZE_X, SIZE_Y, tps);
     loop {
         let paint_start = Instant::now();
 
         canvas.clear();
-        canvas.frame('█'.green());
+        canvas.frame('█'.grey());
 
         if poll(Duration::from_millis(1))? {
             let ev = read()?;
@@ -52,71 +46,33 @@ fn main() -> io::Result<()> {
                     break;
                 }
 
-                if ev.code == KeyCode::Up && ev.is_press() && snake_dir != Direction::DOWN {
-                    snake_dir = Direction::UP;
+                if ev.code == KeyCode::Char('r') && ev.is_press() {
+                    state = GameState::new(SIZE_X, SIZE_Y, TICKS_PER_SECOND);
                 }
 
-                if ev.code == KeyCode::Down && ev.is_press() && snake_dir != Direction::UP {
-                    snake_dir = Direction::DOWN;
+                if ev.code == KeyCode::Char('1') && ev.is_press() && tps > 5 {
+                    tps -= 5;
+                    state.set_tps(tps);
                 }
 
-                if ev.code == KeyCode::Left && ev.is_press() && snake_dir != Direction::RIGHT {
-                    snake_dir = Direction::LEFT;
+                if ev.code == KeyCode::Char('2') && ev.is_press() && tps < 80 {
+                    tps += 5;
+                    state.set_tps(tps);
                 }
 
-                if ev.code == KeyCode::Right && ev.is_press() && snake_dir != Direction::LEFT {
-                    snake_dir = Direction::RIGHT;
-                }
+                state.handle_input(ev);
             }
         }
 
-        match snake_dir {
-            Direction::UP => {
-                snake_dx = 0;
-                snake_dy = -1;
-            }, 
-            Direction::DOWN => {
-                snake_dx = 0;
-                snake_dy = 1;
-            }, 
-            Direction::LEFT => {
-                snake_dx = -1;
-                snake_dy = 0;
-            }, 
-            Direction::RIGHT => {
-                snake_dx = 1;
-                snake_dy = 0;
-            }, 
-        }
-
-
-        if snake_moved.elapsed() > Duration::from_millis(30) {
-            snake_x += snake_dx;
-            snake_y += snake_dy;
-
-            snake_x = warp(snake_x , 50, 1);
-            snake_y = warp(snake_y, 50, 1);
-            snake_moved = Instant::now();
-        }
-
-        canvas.draw_snake(snake_x as u16, snake_y as u16, 's'.grey());
+        state.tick();
+        state.draw(&mut canvas);
 
         paintress.paint(&canvas)?;
 
         let paint_duration = paint_start.elapsed();
-        thread::sleep(Duration::from_millis(32) - paint_duration);
+        thread::sleep(Duration::from_millis(8) - paint_duration);
     }
     paintress.clear()?;
 
     Ok(())
-}
-
-fn warp(c: i16, lim: i16, pad: i16) -> i16 {
-    if c < pad {
-        lim - pad - 1
-    } else if c >= lim - pad {
-        pad
-    } else {
-        c
-    }
 }

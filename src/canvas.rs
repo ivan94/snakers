@@ -73,7 +73,7 @@ where
         }
     }
 
-    pub fn draw_snake(&mut self, x: u16, y: u16, snake: E) {
+    pub fn draw(&mut self, x: u16, y: u16, snake: E) {
         self.buffer[(x, y)] = snake;
     }
 
