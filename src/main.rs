@@ -26,13 +26,14 @@ fn main() -> io::Result<()> {
     paintress.setup()?;
     let mut canvas = Canvas::new(SIZE_X as u16, SIZE_Y as u16, ' '.stylize());
     let mut state = GameState::new(SIZE_X, SIZE_Y, tps);
+    let mut pause = false;
     loop {
         let paint_start = Instant::now();
 
         canvas.clear();
         canvas.frame('█'.grey());
 
-        if poll(Duration::from_millis(1))? {
+        if poll(Duration::from_millis(0))? {
             let ev = read()?;
             if let Event::Key(ev) = ev {
                 if ev.code == KeyCode::Char('c')
@@ -44,6 +45,10 @@ fn main() -> io::Result<()> {
 
                 if ev.code == KeyCode::Char('q') && ev.is_press() {
                     break;
+                }
+
+                if ev.code == KeyCode::Char('p') && ev.is_press() {
+                    pause = !pause;
                 }
 
                 if ev.code == KeyCode::Char('r') && ev.is_press() {
@@ -60,11 +65,16 @@ fn main() -> io::Result<()> {
                     state.set_tps(tps);
                 }
 
-                state.handle_input(ev);
+                if !pause {
+                    state.handle_input(ev);
+                }
+
             }
         }
 
-        state.tick();
+        if !pause {
+            state.tick();
+        }
         state.draw(&mut canvas);
 
         paintress.paint(&canvas)?;
