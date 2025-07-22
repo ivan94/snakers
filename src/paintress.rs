@@ -3,9 +3,11 @@ use std::io::{self, Write};
 use crossterm::{
     ExecutableCommand,
     cursor::{self},
-    queue,
+    execute, queue,
     style::{self, StyledContent},
-    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
+    terminal::{
+        self, EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
+    },
 };
 
 use crate::canvas::Canvas;
@@ -39,10 +41,18 @@ impl Paintress {
 
         let buffer = canvas.get_buffer();
         let (size_x, size_y) = buffer.get_dimensions();
+        let (term_x, term_y) = terminal::size()?;
+        let padding_x = term_x / 2 - size_x / 2;
+        let padding_y = if size_y > term_y {
+            0
+        } else {
+            term_y / 2 - size_y / 2
+        };
+        // eprintln!("Size: {}, Term: {}, Padding: {}", size_x, term_x, padding);
 
         for y in 0..size_y {
             for x in 0..size_x {
-                queue!(stdout, cursor::MoveTo(x, y))?;
+                queue!(stdout, cursor::MoveTo(x + padding_x, y + padding_y))?;
                 queue!(stdout, style::PrintStyledContent(buffer[(x, y)]))?;
             }
         }

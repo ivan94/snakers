@@ -14,8 +14,8 @@ use crossterm::{
 
 use crate::{canvas::Canvas, game_state::GameState, paintress::Paintress};
 
-const SIZE_X: i16 = 40;
-const SIZE_Y: i16 = 30;
+const SIZE_X: i16 = 50;
+const SIZE_Y: i16 = 50;
 const TICKS_PER_SECOND: u64 = 15;
 
 fn main() -> io::Result<()> {
