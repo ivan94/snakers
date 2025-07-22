@@ -3,7 +3,7 @@ use std::io::{self, Write};
 use crossterm::{
     ExecutableCommand,
     cursor::{self},
-    execute, queue,
+    queue,
     style::{self, StyledContent},
     terminal::{
         self, EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode,
